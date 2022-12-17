@@ -89,6 +89,32 @@ int lasterr=0;
 int pidout;
 int speed=0;
 
+/*
+Driving forward
+Pi x Wheel diameter / 360 = distance per degree
+
+4" wheel example:
+3.14 * 4 / 360 = .0349 inches per degree
+
+To travel 24 inches:
+24 / .0349 = 687.679 degrees of rotation.
+
+~~ ~~
+
+Turning
+Looking from the top of your robot you need to identify Track Width which is the distance between the center of the left and right wheels.
+
+If the Track Width is 16" then 16 * 3.14 is 50.24 inches. This is how far the robot would need to travel to spin 360 degrees. 50.24 / 360 degrees is 0.139" per degree of robot rotation.
+
+You will also want to divide that calculation in half so that one set of wheels moves forward and the alternate side moves backwards. This will keep the robot rotating on center.
+
+So a 90 degree turn to the left would be 90 * 0.139 = 12.56.
+12.56 / 2 = 6.28.
+The right motor(s) would move forward 6.28 inches and the left would spin backward 6.28 inches.
+
+
+*/
+
 void autonomous(void) {
   intake.spin(forward, 50, percent);
   wait(1, seconds);
