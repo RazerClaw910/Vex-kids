@@ -91,6 +91,7 @@ int speed=0;
 
 double targetX = 0;
 double FOV = 300;
+vex::vision::object largestObjects = Vision14.objects[0];
 
 void autonomous(void) {
   float driveAuton = 200;
@@ -138,7 +139,6 @@ void usercontrol(void) {
 
     for (int x = 0; x < Vision14.objectCount; x++) {
         vex::vision::object Object = Vision14.objects[x];
-        vex::vision::object largestObjects = Vision14.objects[0];
 
         double centerX = Object.centerX;
         double centerY = Object.centerY;
