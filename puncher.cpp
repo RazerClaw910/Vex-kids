@@ -136,17 +136,17 @@ void usercontrol(void) {
     //If it didn't see anything, take a picture looking for something different.
     if (!Vision14.largestObject.exists) {Vision14.takeSnapshot(Vision14__SIG_2);} 
 
+    vex::vision::object largestObjects = Vision14.objects[0];
     for (int x = 0; x < Vision14.objectCount; x++) {
         vex::vision::object Object = Vision14.objects[x];
-        vex::vision::object largestObject = Vision14.objects[0];
 
         double centerX = Object.centerX;
         double centerY = Object.centerY;
         double currentDist = (centerX-200)*(centerX-200)+(centerY-200)*(centerY-200);
         if (currentDist < FOV) {
-          if (Vision14.objects[x].width * Vision14.objects[x].height > largestObject.width * largestObject.height) {
-              largestObject = Vision14.objects[x];
-              targetX = largestObject.centerX;
+          if (Object.width * Object.height > largestObjects.width * largestObjects.height) {
+              largestObjects = Vision14.objects[x];
+              targetX = largestObjects.centerX;
         }
       }
     }
