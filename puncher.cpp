@@ -12,7 +12,7 @@
 // ---- START VEXCODE CONFIGURED DEVICES ----
 // Robot Configuration:
 // [Name]               [Type]        [Port(s)]
-// Vision14             vision        7               
+// Vision14             vision        5               
 // ---- END VEXCODE CONFIGURED DEVICES ----
  
 using namespace vex;
@@ -62,7 +62,7 @@ bool RemoteControlCodeEnabled = true;
  // Allows for easier use of the VEX Library
 using namespace vex;
 
-
+// Declares motors
 controller Controller1 = controller(primary);
 motor BR = motor(PORT1, ratio6_1, false);
  
@@ -90,18 +90,23 @@ int pidout;
 int speed=0;
 
 void autonomous(void) {
-  //float driveAuton = 200;
-  //float turnAuton = 0;
-  intake.spin(forward, 50, percent);
-  wait(1, seconds);
-  intake.stop();
-  /*
-  FR.spin(forward,driveAuton-turnAuton,volt);
-  FL.spin(forward,driveAuton-turnAuton,volt);
-  wait(5000, msec);
+  float driveAuton = 200;
+  float turnAuton = 0;
+  
+  intake.spin(forward, 100, percent);
+  //for (int i = 0; i < 2; i++) {
+  FR.spin(reverse,driveAuton-turnAuton,volt);
+  FL.spin(reverse,driveAuton-turnAuton,volt);
+  wait(375, msec);
   FR.stop();
   FL.stop();
-  */
+    //FR.spin(forward,driveAuton-turnAuton,volt);
+    //FL.spin(forward,driveAuton-turnAuton,volt);
+    //wait(1000, msec);
+    //FR.stop();
+    //FL.stop();
+    //}
+  intake.stop();
   }
 
 void usercontrol(void) {
@@ -115,7 +120,7 @@ void usercontrol(void) {
 
     //if (Controller1.ButtonB.pressing() && Controller1.ButtonDown.pressing() {})
 
-    if (Controller1.ButtonR2.pressing()) {punch.spin(reverse, 12, volt);}
+    if (Controller1.ButtonR2.pressing()) {punch.spin(reverse, 18, volt);}
     else {punch.stop();}
   
 
@@ -130,21 +135,24 @@ void usercontrol(void) {
     
     //Pid TIMEEE
     //Sensor in is Vision.largestobject.centerX, which returns the horizontal center
-    err=160-Vision14.largestObject.centerX;  //165 is my desired value.  
+    err=165-(Vision14.largestObject.centerX + 2.5);  //165 is my desired value.  
     speed=err-lasterr;
     lasterr=err;
-    pidout=err*.08+speed*.12;  //I directly set my kp and kd without variables.
+    pidout=err*.08+speed*.18;  //I directly set my kp and kd without variables.
 
+    double deadzoneY;
     if (!Controller1.ButtonX.pressing()||!Vision14.largestObject.exists) {pidout=0;}
-
-    drive=Controller1.Axis3.position()*.12;
-    turn=Controller1.Axis1.position()*.12*.45; //- pidout;//add pidout
+    if (Controller1.Axis3.position() < -40.625) {deadzoneY = -40.625;}
+    else {deadzoneY = Controller1.Axis3.position();}
+    drive=deadzoneY*.20;
+    turn=Controller1.Axis1.position()*.20*.65 - pidout;//add pidout
     FR.spin(forward,drive-turn,volt);
     BR.spin(forward,drive-turn,volt);
     TR.spin(forward,drive-turn,volt);
     FL.spin(forward,drive+turn,volt);
     BL.spin(forward,drive+turn,volt);
     TL.spin(forward,drive+turn,volt);
+    wait(30, msec);
 }
 }
 int main() { 
