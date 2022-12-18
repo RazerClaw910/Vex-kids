@@ -90,7 +90,7 @@ int pidout;
 int speed=0;
 
 double targetX = 0;
-double FOV = 60;
+double FOV = 80;
 
 void autonomous(void) {
   float driveAuton = 200;
@@ -142,7 +142,7 @@ void usercontrol(void) {
 
         double centerX = Object.centerX;
         double centerY = Object.centerY;
-        double currentDist = (centerX-200)*(centerX-200)+(centerY-200)*(centerY-200);
+        double currentDist = (centerX-150)*(centerX-150)+(centerY-75)*(centerY-75);
         if (currentDist < FOV) {
           if (Vision14.objects[x].width * Vision14.objects[x].height > largestObject.width * largestObject.height) {
               largestObject = Vision14.objects[x];
