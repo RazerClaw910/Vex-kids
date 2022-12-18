@@ -138,15 +138,15 @@ void usercontrol(void) {
 
     for (int x = 0; x < Vision14.objectCount; x++) {
         vex::vision::object Object = Vision14.objects[x];
-        vex::vision::object OurlargestObject = Vision14.objects[0];
+        vex::vision::object largestObjects = Vision14.objects[0];
 
         double centerX = Object.centerX;
         double centerY = Object.centerY;
         double currentDist = (centerX-150)*(centerX-150)+(centerY-75)*(centerY-75);
         if (currentDist < FOV) {
-          if (Object.width * Object.height > OurlargestObject.width * OurlargestObject.height) {
-              OurlargestObject = Object;
-              targetX = OurlargestObject.centerX;
+          if (Vision14.objects[x].width * Vision14.objects[x].height > largestObjects.width * largestObjects.height) {
+              largestObjects = Vision14.objects[x];
+              targetX = largestObjects.centerX;
         }
       }
     }
