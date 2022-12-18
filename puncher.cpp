@@ -90,7 +90,7 @@ int pidout;
 int speed=0;
 
 double targetX = 0;
-double FOV = 80;
+double FOV = 300;
 
 void autonomous(void) {
   float driveAuton = 200;
