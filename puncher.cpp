@@ -137,8 +137,8 @@ void usercontrol(void) {
     if (!Vision14.largestObject.exists) {Vision14.takeSnapshot(Vision14__SIG_2);} 
 
     for (int i = 0; i < Vision14.objectCount; i++) {
-      if (Vision14.objects[i].centerX < 200 && Vision14.objects[i].centerX > 0 &&
-        Vision14.objects[i].centerY < 200 && Vision14.objects[i].centerY > 0) {
+      if (Vision14.objects[i].centerX < 250 && Vision14.objects[i].centerX > 50 &&
+        Vision14.objects[i].centerY < 180 && Vision14.objects[i].centerY > 70) {
 
           // Get the size of the current object
           int currentSize = Vision14.objects[i].width * Vision14.objects[i].height;
