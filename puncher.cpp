@@ -137,7 +137,7 @@ void usercontrol(void) {
     if (!Vision14.largestObject.exists) {Vision14.takeSnapshot(Vision14__SIG_2);} 
 
     for (int i = 0; i < Vision14.objectCount; i++) {
-      if (Vision14.objects[i].centerX < 250 && Vision14.objects[i].centerX > 50 &&
+      if (Vision14.objects[i].centerX < 225 && Vision14.objects[i].centerX > 120 &&
         Vision14.objects[i].centerY < 180 && Vision14.objects[i].centerY > 70) {
 
           // Get the size of the current object
@@ -156,7 +156,7 @@ void usercontrol(void) {
     err=165-(Vision14.objects[largestIndex].centerX + 2.5);  //165 is my desired value.  
     speed=err-lasterr;
     lasterr=err;
-    pidout=err*.08+speed*.18;  //I directly set my kp and kd without variables.
+    pidout=err*.08+speed*.14;  //I directly set my kp and kd without variables.
 
     double deadzoneY;
     if (!Controller1.ButtonX.pressing()||!Vision14.largestObject.exists) {pidout=0;}
