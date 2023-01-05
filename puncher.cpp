@@ -138,10 +138,11 @@ void usercontrol(void) {
 
     for (int i = 0; i < Vision14.objectCount; i++) {
       //Our FOV constraints
-      if (Vision14.objects[i].centerX < 225 && Vision14.objects[i].centerX > 120 &&
-        Vision14.objects[i].centerY < 180 && Vision14.objects[i].centerY > 70) {
+      if (Vision14.objects[i].centerX < 155 && Vision14.objects[i].centerX > 145 &&
+        Vision14.objects[i].centerY < 100 && Vision14.objects[i].centerY > 60) {
           //Makes sure area is greater than 75
-          if ((Vision14.objects[i].width * Vision14.objects[i].height) > 75) {
+          if ((Vision14.objects[i].width * Vision14.objects[i].height) > 10) {
+            if ((Vision14.objects[i].width / Vision14.objects[i].height) > 0.5) {
 
             // Get the size of the current object
             int currentSize = Vision14.objects[i].width * Vision14.objects[i].height;
@@ -153,14 +154,18 @@ void usercontrol(void) {
             }
           }
         }
+      }
     }
     
     //Pid TIMEEE
     //Sensor in is Vision.largestobject.centerX, which returns the horizontal center
-    err=165-(Vision14.objects[largestIndex].centerX);  //165 is my desired value.  
+    err=165-((Vision14.objects[largestIndex].centerX));  //165 is my desired value.  
     speed=err-lasterr;
     lasterr=err;
-    pidout=err*.08+speed*.14;  //I directly set my kp and kd without variables.
+    if (fabs(err) == 165) {
+      pidout = 0;
+    }
+    pidout=err*.08+speed*.16;  //I directly set my kp and kd without variables.
 
     double deadzoneY;
     if (!Controller1.ButtonX.pressing()||!Vision14.largestObject.exists) {pidout=0;}
