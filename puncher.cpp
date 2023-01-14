@@ -17,6 +17,7 @@
 // PotentiometerV2F     potV2         F               
 // LineTrackerH         line          H               
 // Inertial             inertial      20              
+// Vision17             vision        17              
 // ---- END VEXCODE CONFIGURED DEVICES ----
  
 using namespace vex;
@@ -26,17 +27,17 @@ competition Competition;
 // Brain should be defined by default
 //brain Brain;
  
- 
+
 // START V5 MACROS
 #define waitUntil(condition)                                                   \
  do {                                                                         \
    wait(5, msec);                                                             \
  } while (!(condition))
-/*
+
 #define repeat(iterations)                                                     \\
  for (int iterator = 0; iterator < iterations; iterator++)
 // END V5 MACROS
- */
+ 
  
 // Robot configuration code.
 
@@ -44,8 +45,7 @@ competition Competition;
  
  
 /*vex-vision-config:begin*/
- 
-inertial Inertial1 = inertial(PORT13);
+
  
  
 // define variable for remote controller enable/disable
@@ -110,11 +110,9 @@ double limiter(double val, double min, double max) {
 }
 
 // Return the average of the drive train posistion
-double drivetrainPos() {
+double driveTrainPos() {
   return (rDrive.position(degrees) + lDrive.position(degrees))/2;
 }
-
-double error;
 
 void driveStraight(double target, double accuracy) {
   // Resets motor encoders
@@ -122,34 +120,64 @@ void driveStraight(double target, double accuracy) {
   lDrive.setPosition(0,degrees);
 
   // k values
-  const double kP = 0.00245;
+  const double kP = 0.004;
   const double kI = 0;
-  const double kD = 0.029;
+  const double kD = 0;
 
-  
+  const double rkP = 0.005;
+  const double rkD = 0;
+
+  double currentPos = driveTrainPos();
+  double rTarget = 0;
 
   // driving pid variables
+  double error = target - currentPos;
   double prevError = 0;
   double integral = 0;
   double derivative = 0;
   double output = 0;
 
+  double rError=rTarget-Inertial.heading();
+  double rLastError = 0;
+  double rSpeed = Inertial.gyroRate(xaxis, dps);;
+  double rOutput;
 
-
-  // Driving pid
-  while (true) {
-
-    if (fabs(error) < accuracy) {
-      break;
+  if (rError>180) {
+    rError-=360;
+    }
+  if (rError<-180) {
+    rError+=360;
     }
 
-    error = target - Inertial.heading();
-    Brain.Screen.print(output);
-    Brain.Screen.newLine();
+  // Driving pid
+  while (fabs(error) - 300 > accuracy) {
+    currentPos = driveTrainPos();
+    error = target - currentPos;
+
+    rError=rTarget-Inertial.heading();
+
+    if (rError>180) {
+      rError-=360;
+    }
+    if (rError<-180) {
+      rError+=360;
+    }
+
+    rSpeed = Inertial.gyroRate(xaxis, dps);
+    rLastError = rError;
+    //Brain.Screen.print(error);
+    //Brain.Screen.newLine();
     output = (kP * error + kI * integral + kD * derivative);
-    output = limiter(output, -12, 12); // limits the volt for the output
-    rDrive.spin(forward, output, volt);
-    lDrive.spin(forward, output, volt);
+    rOutput = 0;//(rkP * rError + rkD * rSpeed);
+    //output = limiter(output, -12, 12); // limits the volt for the output
+
+
+  
+    rDrive.spin(forward, output - rOutput, volt);
+    lDrive.spin(forward, output + rOutput, volt);
+
+    
+
     integral += error; // not used currently
     derivative = error - prevError;
     prevError = error;
@@ -157,108 +185,209 @@ void driveStraight(double target, double accuracy) {
   }
 }
 
-
-void turningPid(double turnAngle, double accuracy) {
+void turningPid(double turnTarget, double turnAccuracy) {
   // Resets motor encoders
   rDrive.setPosition(0,degrees);
   lDrive.setPosition(0,degrees);
 
   // k values
-  const double tkP = 0.045;
+  const double tkP = 0.06;
   const double tkI = 0;
   const double tkD = 0;
 
-  // gets the current posistion of the drive train
-  double currentPos = drivetrainPos();
+  
 
   // driving pid variables
-  double turnError = turnAngle - currentPos;
-  double turnPrevError = 0;
-  double turnIntegral = 0;
-  double turnDerivative = 0;
-  double turnOutput = 0;
+  double tError = turnTarget - Inertial.heading();
+  double prevError = 0;
+  double integral = 0;
+  double derivative = 0;
+  double output = 0;
 
-  // Driving pid
-  while (fabs(turnError) > accuracy) {
-    currentPos = drivetrainPos();
-    turnError = turnAngle - currentPos;
-    Brain.Screen.print(turnOutput);
-    Brain.Screen.newLine();
-    turnOutput = (tkP * turnError + tkI * turnIntegral + tkD * turnDerivative);
-    turnOutput = limiter(turnOutput, -12, 12); // limits the volt for the output 
-    rDrive.spin(forward, turnOutput, volt);
-    lDrive.spin(forward, turnOutput, volt);
-    turnIntegral += turnError; // not used currently
-    turnDerivative = turnError - turnPrevError;
-    turnPrevError = turnError;
+  if (tError>180) {
+      tError-=360;
+    }
+    if (tError<-180) {
+      tError+=360;
+    }
+
+
+
+  // Turning Pid
+  while (fabs(tError) > turnAccuracy) {
+    tError = turnTarget - Inertial.heading();
+
+    output = (tkP * tError + tkI * integral + tkD * derivative);
+    //output = limiter(output, -12, 12); // limits the volt for the output
+
+    Brain.Screen.print(Inertial.heading());
+    rDrive.spin(forward, -output, volt);
+    lDrive.spin(forward, output, volt);
+
+    
+
+    integral += tError; // not used currently
+    derivative = tError - prevError;
+    prevError = tError;
     wait(10, msec);
   }
 }
 
 
 void autonomous(void) {
-  driveStraight(360, .5);
-  /*
-  rDrive.resetPosition();
-  lDrive.resetPosition();
-  lDrive.spin(fwd, 12, volt);
-  rDrive.spin(fwd, 12, volt);  nbn  
+  // Long Side auton
+  
   intake.spin(fwd, 12, volt);
-  wait(1500, msec);
+  lDrive.spin(reverse, 6, volt);
+  rDrive.spin(reverse, 6, volt);
+  wait(350,msec);
+  lDrive.stop();
+  rDrive.stop();
+  wait(100, msec);
   intake.stop();
-  driveStraight(-1080, .5);
-  rDrive.spin(fwd, -4, volt);
-  lDrive.spin(fwd, 4, volt);
-  driveStraight(1800, .5);
+  
+  /*
+  driveStraight(1440, .5);
+  wait(150, msec);
+
+  lDrive.spin(fwd, 3, volt);
+  rDrive.spin(fwd, -3, volt);
+  wait(715, msec);
+  lDrive.stop();
+  rDrive.stop();
+  wait(150, msec);
+
+  driveStraight(2520, .5);
+  wait(150, msec);
+
   punch.spin(reverse, 12, volt);
-  wait(1, sec);
+  wait(2, sec);
   punch.stop();
   */
+
+  //  Short side auton
   /*
-  float driveAuton = 200;
-  float turnAuton = 0;
+  driveStraight(1080, .5);
+  wait(150, msec);
+
+  lDrive.spin(fwd, 3, volt);
+  rDrive.spin(fwd, -3, volt);
+  wait(710, msec);
+  lDrive.stop();
+  rDrive.stop();
+  wait(150, msec);
   
-  intake.spin(forward, 100, percent);
-  //for (int i = 0; i < 2; i++) {
-  FR.spin(reverse,driveAuton-turnAuton,volt);
-  FL.spin(reverse,driveAuton-turnAuton,volt);
-  wait(375, msec);
-  FR.stop();
-  FL.stop();
-    //FR.spin(forward,driveAuton-turnAuton,volt);
-    //FL.spin(forward,driveAuton-turnAuton,volt);
-    //wait(1000, msec);
-    //FR.stop();
-    //FL.stop();
-    //}
+  driveStraight(1440, .5);
+  wait(150, msec);
+
+  lDrive.spin(fwd, -3, volt);
+  rDrive.spin(fwd, 3, volt);
+  wait(705, msec);
+  lDrive.stop();
+  rDrive.stop();
+  wait(150, msec);
+  */   /*
+  intake.spin(fwd, 12, volt);
+  driveStraight(-1440, .5);
+  wait(500, msec);
   intake.stop();
+  wait(100, msec);
+
+  driveStraight(1800, .5);
+  wait(100, msec);
+  lDrive.spin(fwd, -3, volt);
+  rDrive.spin(fwd, 3, volt);
+  wait(715, msec);
+  lDrive.stop();
+  rDrive.stop();
+  wait(150, msec);
+
+  driveStraight(2520, .5);
+  wait(150, msec);
+  punch.spin(reverse, 12, volt);
+  wait(2, sec);
+  punch.stop();
   */
-  }
+
+  // Programing Skills
+  /*
+  intake.spin(forward, 12, volt);
+  driveStraight(-1080, .5);
+  wait(450, msec);
+  intake.stop();
+  wait(150, msec);
+
+  driveStraight(1800, .5);
+  wait(150, msec);
+
+  lDrive.spin(fwd, 3, volt);
+  rDrive.spin(fwd, -3, volt);
+  wait(765, msec);
+  lDrive.stop();
+  rDrive.stop();
+  wait(150, msec);
+  */
+  /*
+  intake.spin(reverse, 12, volt);
+  driveStraight(-1800, .5);
+  wait(2, sec);
+  intake.stop();
+  wait(150, msec);
+  */
+  /*
+  lDrive.spin(fwd, 6, volt);
+  rDrive.spin(fwd, 6, volt);
+  wait(1150, msec);
+  lDrive.stop();
+  rDrive.stop();
+  wait(100, msec);
+
+  lDrive.spin(fwd, -3, volt);
+  rDrive.spin(fwd, 3, volt);
+  wait(705, msec);
+  lDrive.stop();
+  rDrive.stop();
+  wait(100, msec);
+
+  lDrive.spin(fwd, 8, volt);
+  rDrive.spin(fwd, 8, volt);
+  wait(1000, msec);
+  lDrive.stop();
+  rDrive.stop();
+  wait(100, msec);
+
+  punch.spin(reverse, 12, volt);
+  wait(2500, msec);
+  punch.stop();
+  */
+  //
+}
 
 int largestSize = 0;
 int largestIndex = 0; // variable to store the index of the largest object
 
 void usercontrol(void) {
-  /*
-  punch.setVelocity(100,percent);
-  punch.spin(reverse);
-  punch.setStopping(brake);
-  wait(500,msec);
-  */
-  while (true) {
-    // if button is pressed, run motor for 1 turn, set primed to false.
-    // if primed is false run motor
-    //if power>1 watt set primed to true and cat.spinfor(2.5 rotations)
-    //
-    //
-    //Once button is released, run motor. if motor isrun motor
 
+  while (true) {
+    /*
+    if(Controller1.ButtonA.pressing()){
+      turningPid(90, .5);
+    }
+    */
+    /*
+    if(Controller1.ButtonY.pressing()){
+      driveStraight(-2160, .5);
+    }
+    */
     if (Controller1.ButtonR2.pressing()) {punch.spin(reverse, 12, volt);}
-    else if (LineTrackerH.reflectivity() <= 99 && !Controller1.ButtonR2.pressing()) {punch.spin(reverse, 3, volt);}
+    else if (LineTrackerH.reflectivity() <= 40 && Controller1.ButtonR2.pressing()) {punch.spin(reverse, 3, volt);}
+    else if (LineTrackerH.reflectivity() <= 80 && !Controller1.ButtonR2.pressing()) {punch.spin(reverse, 6, volt);}
     else {punch.stop();}
   
-    if(Controller1.ButtonDown.pressing() && Controller1.ButtonB.pressing()){
+    if( (Controller1.ButtonDown.pressing() && Controller1.ButtonB.pressing()) || (Controller1.ButtonB.pressing() && Controller1.ButtonDown.pressing()) ){
       piston.set(true);
+    } else {
+      piston.set(false);
     }
   
 
@@ -268,12 +397,14 @@ void usercontrol(void) {
     else {intake.stop();}
 
     Vision14.takeSnapshot(Vision14__SIG_1);  //Take a picture
-    //If it didn't see anything, take a picture looking for something different.
-    if (!Vision14.largestObject.exists) {Vision14.takeSnapshot(Vision14__SIG_2);} 
+    Vision17.takeSnapshot(Vision17__SIG_1);  //Take a picture
 
-    for (int i = 0; i < Vision14.objectCount; i++) {
+    if(!Vision17.largestObject.exists){Vision17.takeSnapshot(Vision17__SIG_2);}
+    //If it didn't see anything, take a picture looking for something different.
+
+    for (int i = 0; i <= Vision14.objectCount; i++) {
       //Our FOV constraints
-      if (Vision14.objects[i].centerX < 170 && Vision14.objects[i].centerX > 140 && Vision14.objects[i].centerY < 150) {
+      if (Vision14.objects[i].centerX < 170 && Vision14.objects[i].centerX > 140) {
           //Makes sure area is greater than 20 or watever i set it lmao
           if ((Vision14.objects[i].width * Vision14.objects[i].height) > 100) {
             if ((Vision14.objects[i].width / Vision14.objects[i].height) >= 2.5) {
@@ -290,23 +421,37 @@ void usercontrol(void) {
         }
       }
     }
+    /*
+    for (int i = 0; i <= Vision17.objectCount; i++) {
+      //Our FOV constraints
+            // Get the size of the current object
+            int currentSize = Vision17.objects[i].width * Vision17.objects[i].height;
+            // If the current object is larger than the largest object, update the variable
+            if (currentSize > largestSize) {
+              largestSize = currentSize;
+              largestIndex = i;
+            }  
+    }
+    int aimbotTarget = Vision14.objects[largestIndex].centerX+6;
+    if (Controller1.ButtonX.pressing()) {
+      aimbotTarget = Vision14.objects[largestIndex].centerX+6;
+    } else if (Controller1.ButtonA.pressing()) {
+      aimbotTarget = Vision17.objects[largestIndex].centerX;
+    }
+    */
     
     //Pid TIMEEE
     //Sensor in is Vision.largestobject.centerX, which returns the horizontal center
-    err=160-((Vision14.objects[largestIndex].centerX)+6);  //165 is my desired value.  
+    err=160-(Vision14.objects[largestIndex].centerX+6);  //165 is my desired value.  
     speed=err-lasterr;
     lasterr=err;
-    pidout=err*.04+speed*.06;  //I directly set my kp and kd without variables.
+    pidout=err*.04+speed*.05;  //I directly set my kp and kd without variables.
 
-    if (!Controller1.ButtonX.pressing()||!Vision14.largestObject.exists) {pidout=0;}
+    if (!Controller1.ButtonX.pressing()||!Controller1.ButtonA.pressing()||!Vision14.largestObject.exists) {pidout=0;}
     drive=Controller1.Axis3.position()*.10;
     turn=Controller1.Axis1.position()*.10*.65 - pidout;//add pidout
-    FR.spin(forward,drive-turn,volt);
-    BR.spin(forward,drive-turn,volt);
-    TR.spin(forward,drive-turn,volt);
-    FL.spin(forward,drive+turn,volt);
-    BL.spin(forward,drive+turn,volt);
-    TL.spin(forward,drive+turn,volt);
+    rDrive.spin(fwd, drive-turn, volt);
+    lDrive.spin(fwd, drive+turn, volt);
     wait(30, msec);
   }
 }
